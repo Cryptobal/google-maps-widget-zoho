@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Maps Widget - Zoho CRM</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #ffffff;
+            color: #333333;
+            line-height: 1.4;
+            padding: 16px;
+        }
+        
+        .widget-container {
+            max-width: 100%;
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .widget-header {
+            background: #f8f9fa;
+            padding: 16px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .widget-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+        
+        .widget-subtitle {
+            font-size: 14px;
+            color: #6c757d;
+        }
+        
+        .widget-content {
+            padding: 16px;
+        }
+        
+        .search-section {
+            margin-bottom: 20px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+            background-color: #ffffff;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+        
+        .btn-primary {
+            background-color: #007bff;
+            color: #ffffff;
+        }
+        
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            color: #ffffff;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+        
+        .map-container {
+            width: 100%;
+            height: 300px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            background-color: #f8f9fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        
+        .info-panel {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 16px;
+            display: none;
+        }
+        
+        .info-panel.show {
+            display: block;
+        }
+        
+        .info-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 12px;
+        }
+        
+        .info-item {
+            margin-bottom: 8px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .info-label {
+            font-weight: 500;
+            color: #495057;
+            font-size: 13px;
+            margin-bottom: 2px;
+        }
+        
+        .info-value {
+            color: #6c757d;
+            font-size: 14px;
+        }
+        
+        .message {
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .message.show {
+            display: block;
+        }
+        
+        .message-success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .message-error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Campos ocultos para Zoho CRM */
+        .hidden-fields {
+            display: none;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 8px;
+            }
+            
+            .widget-content {
+                padding: 12px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+            
+            .map-container {
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="widget-container">
+        <div class="widget-header">
+            <div class="widget-title">🗺️ Buscador de Direcciones</div>
+            <div class="widget-subtitle">Busca direcciones y visualiza en el mapa</div>
+        </div>
+        
+        <div class="widget-content">
+            <!-- Mensajes -->
+            <div id="messageContainer"></div>
+            
+            <!-- Sección de búsqueda -->
+            <div class="search-section">
+                <input 
+                    type="text" 
+                    id="addressInput" 
+                    class="search-input" 
+                    placeholder="Escribe una dirección para buscar..."
+                    autocomplete="off"
+                >
+            </div>
+            
+            <!-- Botones -->
+            <div class="button-group">
+                <button id="searchBtn" class="btn btn-primary">🔍 Buscar</button>
+                <button id="clearBtn" class="btn btn-secondary">🗑️ Limpiar</button>
+            </div>
+            
+            <!-- Contenedor del mapa -->
+            <div id="mapContainer" class="map-container">
+                <div>El mapa se cargará aquí después de buscar una dirección</div>
+            </div>
+            
+            <!-- Panel de información -->
+            <div id="infoPanel" class="info-panel">
+                <div class="info-title">📍 Información de la Dirección</div>
+                <div class="info-item">
+                    <div class="info-label">Dirección Completa:</div>
+                    <div id="infoFullAddress" class="info-value">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Ciudad:</div>
+                    <div id="infoCity" class="info-value">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Comuna:</div>
+                    <div id="infoCommune" class="info-value">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Coordenadas:</div>
+                    <div id="infoCoordinates" class="info-value">-</div>
+                </div>
+            </div>
+            
+            <!-- Campos ocultos para Zoho CRM -->
+            <div class="hidden-fields">
+                <input type="hidden" id="hiddenFullAddress" name="full_address">
+                <input type="hidden" id="hiddenCity" name="city">
+                <input type="hidden" id="hiddenCommune" name="commune">
+                <input type="hidden" id="hiddenLatitude" name="latitude">
+                <input type="hidden" id="hiddenLongitude" name="longitude">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let map = null;
+        let marker = null;
+        let geocoder = null;
+        let autocomplete = null;
+        
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Widget de Google Maps iniciado - Hosting Externo');
+            initializeWidget();
+        });
+        
+        function initializeWidget() {
+            // Configurar event listeners
+            setupEventListeners();
+            
+            // Intentar cargar Google Maps API
+            loadGoogleMapsAPI();
+        }
+        
+        function setupEventListeners() {
+            const addressInput = document.getElementById('addressInput');
+            const searchBtn = document.getElementById('searchBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            
+            // Evento de búsqueda
+            searchBtn.addEventListener('click', handleSearch);
+            
+            // Evento de limpiar
+            clearBtn.addEventListener('click', clearAll);
+            
+            // Evento de teclado
+            addressInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    handleSearch();
+                }
+            });
+        }
+        
+        function loadGoogleMapsAPI() {
+            // Verificar si Google Maps ya está cargado
+            if (typeof google !== 'undefined' && google.maps) {
+                console.log('Google Maps API ya está cargada');
+                initializeGoogleMaps();
+                return;
+            }
+            
+            // Cargar Google Maps API dinámicamente
+            console.log('Cargando Google Maps API...');
+            const script = document.createElement('script');
+            script.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyBHIoHJDp6StLJlUAQV_gK7woFsEYgbzHY&libraries=places&callback=onGoogleMapsLoaded';
+            script.async = true;
+            script.defer = true;
+            script.onerror = function() {
+                console.error('Error cargando Google Maps API');
+                showMessage('Error al cargar Google Maps API', 'error');
+            };
+            document.head.appendChild(script);
+        }
+        
+        // Callback cuando Google Maps se carga
+        function onGoogleMapsLoaded() {
+            console.log('Google Maps API cargada exitosamente');
+            initializeGoogleMaps();
+        }
+        
+        function initializeGoogleMaps() {
+            try {
+                // Inicializar geocoder
+                geocoder = new google.maps.Geocoder();
+                
+                // Configurar autocompletado
+                const addressInput = document.getElementById('addressInput');
+                autocomplete = new google.maps.places.Autocomplete(addressInput, {
+                    types: ['address'],
+                    componentRestrictions: { country: 'cl' }
+                });
+                
+                autocomplete.addListener('place_changed', function() {
+                    const place = autocomplete.getPlace();
+                    if (place.geometry) {
+                        showLocation(place);
+                    }
+                });
+                
+                console.log('Google Maps inicializado correctamente');
+                showMessage('Google Maps cargado correctamente', 'success');
+                
+            } catch (error) {
+                console.error('Error inicializando Google Maps:', error);
+                showMessage('Error inicializando Google Maps: ' + error.message, 'error');
+            }
+        }
+        
+        function handleSearch() {
+            const address = document.getElementById('addressInput').value.trim();
+            
+            if (!address) {
+                showMessage('Por favor, ingresa una dirección para buscar', 'error');
+                return;
+            }
+            
+            if (!geocoder) {
+                showMessage('Google Maps no está disponible. Intenta recargar la página.', 'error');
+                return;
+            }
+            
+            // Mostrar estado de carga
+            const searchBtn = document.getElementById('searchBtn');
+            const originalText = searchBtn.innerHTML;
+            searchBtn.innerHTML = '<span class="loading"></span>Buscando...';
+            searchBtn.disabled = true;
+            
+            // Geocodificar la dirección
+            geocoder.geocode({ address: address }, function(results, status) {
+                // Restaurar botón
+                searchBtn.innerHTML = originalText;
+                searchBtn.disabled = false;
+                
+                if (status === 'OK' && results[0]) {
+                    showLocation(results[0]);
+                } else {
+                    showMessage('No se pudo encontrar la dirección especificada. Intenta con una dirección más específica.', 'error');
+                }
+            });
+        }
+        
+        function showLocation(place) {
+            try {
+                const location = place.geometry.location;
+                
+                // Crear o actualizar el mapa
+                if (!map) {
+                    const mapContainer = document.getElementById('mapContainer');
+                    mapContainer.innerHTML = ''; // Limpiar contenido
+                    
+                    map = new google.maps.Map(mapContainer, {
+                        center: location,
+                        zoom: 15,
+                        mapTypeControl: true,
+                        streetViewControl: true,
+                        fullscreenControl: true
+                    });
+                } else {
+                    map.setCenter(location);
+                    map.setZoom(15);
+                }
+                
+                // Eliminar marcador anterior
+                if (marker) {
+                    marker.setMap(null);
+                }
+                
+                // Crear nuevo marcador
+                marker = new google.maps.Marker({
+                    position: location,
+                    map: map,
+                    title: place.formatted_address
+                });
+                
+                // Extraer información de la dirección
+                const addressComponents = place.address_components || [];
+                let city = '';
+                let commune = '';
+                
+                addressComponents.forEach(function(component) {
+                    const types = component.types;
+                    if (types.includes('locality')) {
+                        city = component.long_name;
+                    } else if (types.includes('administrative_area_level_2')) {
+                        commune = component.long_name;
+                    }
+                });
+                
+                // Actualizar la interfaz
+                document.getElementById('infoFullAddress').textContent = place.formatted_address;
+                document.getElementById('infoCity').textContent = city || '-';
+                document.getElementById('infoCommune').textContent = commune || '-';
+                document.getElementById('infoCoordinates').textContent = 
+                    location.lat().toFixed(6) + ', ' + location.lng().toFixed(6);
+                
+                // Actualizar campos ocultos
+                document.getElementById('hiddenFullAddress').value = place.formatted_address;
+                document.getElementById('hiddenCity').value = city;
+                document.getElementById('hiddenCommune').value = commune;
+                document.getElementById('hiddenLatitude').value = location.lat();
+                document.getElementById('hiddenLongitude').value = location.lng();
+                
+                // Mostrar panel de información
+                document.getElementById('infoPanel').classList.add('show');
+                
+                showMessage('Dirección encontrada y marcada en el mapa', 'success');
+                
+            } catch (error) {
+                console.error('Error mostrando ubicación:', error);
+                showMessage('Error al mostrar la ubicación: ' + error.message, 'error');
+            }
+        }
+        
+        function clearAll() {
+            // Limpiar input
+            document.getElementById('addressInput').value = '';
+            
+            // Limpiar campos ocultos
+            document.getElementById('hiddenFullAddress').value = '';
+            document.getElementById('hiddenCity').value = '';
+            document.getElementById('hiddenCommune').value = '';
+            document.getElementById('hiddenLatitude').value = '';
+            document.getElementById('hiddenLongitude').value = '';
+            
+            // Ocultar panel de información
+            document.getElementById('infoPanel').classList.remove('show');
+            
+            // Limpiar mapa
+            if (marker) {
+                marker.setMap(null);
+                marker = null;
+            }
+            
+            if (map) {
+                map.setCenter({ lat: -33.4489, lng: -70.6693 });
+                map.setZoom(12);
+            } else {
+                // Si no hay mapa, mostrar mensaje
+                const mapContainer = document.getElementById('mapContainer');
+                mapContainer.innerHTML = '<div>El mapa se cargará aquí después de buscar una dirección</div>';
+            }
+            
+            // Limpiar mensajes
+            clearMessages();
+            
+            console.log('Widget limpiado');
+        }
+        
+        function showMessage(message, type) {
+            const messageContainer = document.getElementById('messageContainer');
+            messageContainer.innerHTML = `<div class="message message-${type} show">${message}</div>`;
+            
+            // Auto-ocultar después de 5 segundos
+            setTimeout(function() {
+                messageContainer.innerHTML = '';
+            }, 5000);
+        }
+        
+        function clearMessages() {
+            document.getElementById('messageContainer').innerHTML = '';
+        }
+        
+        // Función para obtener datos (útil para integración con Zoho)
+        function getFormData() {
+            return {
+                address: document.getElementById('addressInput').value,
+                fullAddress: document.getElementById('hiddenFullAddress').value,
+                city: document.getElementById('hiddenCity').value,
+                commune: document.getElementById('hiddenCommune').value,
+                latitude: document.getElementById('hiddenLatitude').value,
+                longitude: document.getElementById('hiddenLongitude').value
+            };
+        }
+        
+        // Exportar función globalmente
+        window.getFormData = getFormData;
+        
+        // Log de inicialización
+        console.log('Widget de Google Maps cargado y listo - Hosting Externo');
+    </script>
+</body>
+</html>
