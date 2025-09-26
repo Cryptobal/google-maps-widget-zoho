@@ -45,12 +45,19 @@
             color: #6c757d;
         }
         
+        .status-indicator {
+            font-size: 12px;
+            color: #28a745;
+            margin-top: 4px;
+            font-weight: 500;
+        }
+        
         .widget-content {
-            padding: 16px;
+            padding: 12px;
         }
         
         .search-section {
-            margin-bottom: 20px;
+            margin-bottom: 12px;
         }
         
         .search-input {
@@ -71,16 +78,16 @@
         
         .button-group {
             display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
+            gap: 6px;
+            margin-bottom: 12px;
             flex-wrap: wrap;
         }
         
         .btn {
-            padding: 10px 16px;
+            padding: 8px 12px;
             border: none;
             border-radius: 6px;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -109,10 +116,10 @@
         
         .map-container {
             width: 100%;
-            height: 300px;
+            height: 200px;
             border: 1px solid #e0e0e0;
             border-radius: 6px;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
             background-color: #f8f9fa;
             display: flex;
             align-items: center;
@@ -232,6 +239,7 @@
         <div class="widget-header">
             <div class="widget-title">🗺️ Buscador de Direcciones</div>
             <div class="widget-subtitle">Busca direcciones y visualiza en el mapa</div>
+            <div id="statusIndicator" class="status-indicator">🟢 Conectado</div>
         </div>
         
         <div class="widget-content">
@@ -305,6 +313,11 @@
             console.log('Widget de Google Maps iniciado - Hosting Externo');
             initializeWidget();
             loadSavedData(); // Cargar datos guardados
+            
+            // Forzar actualización del widget cada 2 segundos
+            setInterval(function() {
+                refreshWidget();
+            }, 2000);
         });
         
         function initializeWidget() {
@@ -864,11 +877,46 @@
             }
         }
         
+        function refreshWidget() {
+            try {
+                // Verificar si el widget está visible
+                const widget = document.querySelector('.widget-container');
+                if (!widget) return;
+                
+                // Verificar si hay datos guardados y actualizar la interfaz
+                const savedData = localStorage.getItem('zoho-maps-widget-data');
+                if (savedData) {
+                    const data = JSON.parse(savedData);
+                    
+                    // Actualizar campos si están vacíos
+                    if (!document.getElementById('addressInput').value && data.address) {
+                        document.getElementById('addressInput').value = data.address;
+                    }
+                    
+                    // Mostrar panel de información si hay datos
+                    if (data.address && !document.getElementById('infoPanel').classList.contains('show')) {
+                        document.getElementById('infoFullAddress').textContent = data.address;
+                        document.getElementById('infoCity').textContent = data.city || '-';
+                        document.getElementById('infoCommune').textContent = data.commune || '-';
+                        document.getElementById('infoCoordinates').textContent = 
+                            (data.latitude ? data.latitude.toFixed(6) : '-') + ', ' + 
+                            (data.longitude ? data.longitude.toFixed(6) : '-');
+                        
+                        document.getElementById('infoPanel').classList.add('show');
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Error refrescando widget:', error);
+            }
+        }
+        
         // Exportar funciones globalmente
         window.getFormData = getFormData;
         window.saveDataToStorage = saveDataToStorage;
         window.loadSavedData = loadSavedData;
         window.clearSavedData = clearSavedData;
+        window.refreshWidget = refreshWidget;
         
         // Log de inicialización
         console.log('Widget de Google Maps cargado y listo - Hosting Externo con Persistencia');
