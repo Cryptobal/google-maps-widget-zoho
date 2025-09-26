@@ -872,6 +872,9 @@
         
         function saveUsingZohoForm(data) {
             try {
+                console.log('=== DIAGNÓSTICO DE CAMPOS ZOHO CRM ===');
+                console.log('Datos a guardar:', data);
+                
                 // Método alternativo: usar campos del formulario de Zoho CRM
                 const zohoFields = {
                     'Direccion': data.address,        // Campo Dirección
@@ -883,8 +886,28 @@
                 
                 let fieldsUpdated = 0;
                 
-                // Buscar y actualizar campos del formulario de Zoho CRM
+                // DIAGNÓSTICO: Buscar TODOS los campos input en la página
+                console.log('=== BUSCANDO TODOS LOS CAMPOS INPUT ===');
+                const allInputs = document.querySelectorAll('input, textarea, select');
+                console.log(`Total de campos encontrados: ${allInputs.length}`);
+                
+                allInputs.forEach(function(input, index) {
+                    console.log(`Campo ${index}:`, {
+                        tag: input.tagName,
+                        name: input.name,
+                        id: input.id,
+                        placeholder: input.placeholder,
+                        'aria-label': input.getAttribute('aria-label'),
+                        'data-field': input.getAttribute('data-field'),
+                        class: input.className
+                    });
+                });
+                
+                // Buscar campos específicos de Zoho CRM
+                console.log('=== BUSCANDO CAMPOS ESPECÍFICOS ===');
                 Object.keys(zohoFields).forEach(function(fieldName) {
+                    console.log(`Buscando campo: ${fieldName}`);
+                    
                     // Buscar campo por múltiples selectores
                     const selectors = [
                         `input[name="${fieldName}"]`,
@@ -893,13 +916,19 @@
                         `input[placeholder*="${fieldName}"]`,
                         `input[aria-label*="${fieldName}"]`,
                         `textarea[name="${fieldName}"]`,
-                        `textarea[id*="${fieldName}"]`
+                        `textarea[id*="${fieldName}"]`,
+                        `input[name*="${fieldName.toLowerCase()}"]`,
+                        `input[id*="${fieldName.toLowerCase()}"]`,
+                        `input[placeholder*="${fieldName.toLowerCase()}"]`
                     ];
                     
                     let field = null;
                     for (let selector of selectors) {
                         field = document.querySelector(selector);
-                        if (field) break;
+                        if (field) {
+                            console.log(`Campo ${fieldName} encontrado con selector: ${selector}`);
+                            break;
+                        }
                     }
                     
                     if (field) {
@@ -907,19 +936,20 @@
                         // Disparar evento de cambio para que Zoho CRM detecte el cambio
                         field.dispatchEvent(new Event('input', { bubbles: true }));
                         field.dispatchEvent(new Event('change', { bubbles: true }));
-                        console.log(`Campo ${fieldName} actualizado:`, zohoFields[fieldName]);
+                        field.dispatchEvent(new Event('blur', { bubbles: true }));
+                        console.log(`✅ Campo ${fieldName} actualizado:`, zohoFields[fieldName]);
                         fieldsUpdated++;
                     } else {
-                        console.log(`Campo ${fieldName} no encontrado en el formulario`);
+                        console.log(`❌ Campo ${fieldName} NO encontrado en el formulario`);
                     }
                 });
                 
                 if (fieldsUpdated > 0) {
-                    console.log(`Se actualizaron ${fieldsUpdated} campos de Detalles Instalación`);
+                    console.log(`✅ Se actualizaron ${fieldsUpdated} campos de Detalles Instalación`);
                     showMessage(`Datos guardados en ${fieldsUpdated} campos de Detalles Instalación`, 'success');
                 } else {
-                    console.log('No se encontraron campos para actualizar');
-                    showMessage('No se encontraron campos de Detalles Instalación para actualizar', 'error');
+                    console.log('❌ No se encontraron campos para actualizar');
+                    showMessage('❌ No se encontraron campos de Detalles Instalación. Revisa la consola para diagnóstico.', 'error');
                 }
                 
             } catch (error) {
