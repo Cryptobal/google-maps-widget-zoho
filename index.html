@@ -303,6 +303,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Widget de Google Maps iniciado - Hosting Externo');
             initializeWidget();
+            loadSavedData(); // Cargar datos guardados
         });
         
         function initializeWidget() {
@@ -481,6 +482,15 @@
                 document.getElementById('hiddenLatitude').value = location.lat();
                 document.getElementById('hiddenLongitude').value = location.lng();
                 
+                // Guardar datos persistentemente
+                saveDataToStorage({
+                    address: place.formatted_address,
+                    city: city,
+                    commune: commune,
+                    latitude: location.lat(),
+                    longitude: location.lng()
+                });
+                
                 // Mostrar panel de información
                 document.getElementById('infoPanel').classList.add('show');
                 
@@ -502,6 +512,9 @@
             document.getElementById('hiddenCommune').value = '';
             document.getElementById('hiddenLatitude').value = '';
             document.getElementById('hiddenLongitude').value = '';
+            
+            // Limpiar datos guardados
+            clearSavedData();
             
             // Ocultar panel de información
             document.getElementById('infoPanel').classList.remove('show');
@@ -553,11 +566,141 @@
             };
         }
         
-        // Exportar función globalmente
+        // Funciones de persistencia de datos
+        function saveDataToStorage(data) {
+            try {
+                const widgetData = {
+                    address: data.address,
+                    city: data.city,
+                    commune: data.commune,
+                    latitude: data.latitude,
+                    longitude: data.longitude,
+                    timestamp: new Date().toISOString()
+                };
+                
+                localStorage.setItem('zoho-maps-widget-data', JSON.stringify(widgetData));
+                console.log('Datos guardados en localStorage:', widgetData);
+                
+                // También intentar guardar en Zoho CRM si está disponible
+                if (typeof ZOHO !== 'undefined' && ZOHO.CRM) {
+                    saveToZohoCRM(widgetData);
+                }
+                
+            } catch (error) {
+                console.error('Error guardando datos:', error);
+            }
+        }
+        
+        function loadSavedData() {
+            try {
+                const savedData = localStorage.getItem('zoho-maps-widget-data');
+                if (savedData) {
+                    const data = JSON.parse(savedData);
+                    
+                    // Restaurar datos en la interfaz
+                    document.getElementById('addressInput').value = data.address || '';
+                    document.getElementById('hiddenFullAddress').value = data.address || '';
+                    document.getElementById('hiddenCity').value = data.city || '';
+                    document.getElementById('hiddenCommune').value = data.commune || '';
+                    document.getElementById('hiddenLatitude').value = data.latitude || '';
+                    document.getElementById('hiddenLongitude').value = data.longitude || '';
+                    
+                    // Actualizar panel de información
+                    if (data.address) {
+                        document.getElementById('infoFullAddress').textContent = data.address;
+                        document.getElementById('infoCity').textContent = data.city || '-';
+                        document.getElementById('infoCommune').textContent = data.commune || '-';
+                        document.getElementById('infoCoordinates').textContent = 
+                            (data.latitude ? data.latitude.toFixed(6) : '-') + ', ' + 
+                            (data.longitude ? data.longitude.toFixed(6) : '-');
+                        
+                        document.getElementById('infoPanel').classList.add('show');
+                        
+                        // Si hay coordenadas, mostrar en el mapa
+                        if (data.latitude && data.longitude) {
+                            showLocationFromData(data);
+                        }
+                    }
+                    
+                    console.log('Datos cargados desde localStorage:', data);
+                }
+            } catch (error) {
+                console.error('Error cargando datos guardados:', error);
+            }
+        }
+        
+        function clearSavedData() {
+            try {
+                localStorage.removeItem('zoho-maps-widget-data');
+                console.log('Datos guardados eliminados');
+            } catch (error) {
+                console.error('Error eliminando datos guardados:', error);
+            }
+        }
+        
+        function showLocationFromData(data) {
+            if (!data.latitude || !data.longitude) return;
+            
+            try {
+                const location = { lat: data.latitude, lng: data.longitude };
+                
+                // Crear o actualizar el mapa
+                if (!map) {
+                    const mapContainer = document.getElementById('mapContainer');
+                    mapContainer.innerHTML = ''; // Limpiar contenido
+                    
+                    map = new google.maps.Map(mapContainer, {
+                        center: location,
+                        zoom: 15,
+                        mapTypeControl: true,
+                        streetViewControl: true,
+                        fullscreenControl: true
+                    });
+                } else {
+                    map.setCenter(location);
+                    map.setZoom(15);
+                }
+                
+                // Eliminar marcador anterior
+                if (marker) {
+                    marker.setMap(null);
+                }
+                
+                // Crear nuevo marcador
+                marker = new google.maps.Marker({
+                    position: location,
+                    map: map,
+                    title: data.address
+                });
+                
+            } catch (error) {
+                console.error('Error mostrando ubicación desde datos guardados:', error);
+            }
+        }
+        
+        function saveToZohoCRM(data) {
+            try {
+                // Intentar guardar en Zoho CRM usando la API
+                if (typeof ZOHO !== 'undefined' && ZOHO.CRM && ZOHO.CRM.API) {
+                    // Esta función se ejecutará cuando Zoho CRM esté disponible
+                    console.log('Intentando guardar en Zoho CRM:', data);
+                    
+                    // Aquí puedes agregar la lógica específica para guardar en Zoho CRM
+                    // Por ejemplo, actualizar campos de un registro específico
+                }
+            } catch (error) {
+                console.error('Error guardando en Zoho CRM:', error);
+            }
+        }
+        
+        // Exportar funciones globalmente
         window.getFormData = getFormData;
+        window.saveDataToStorage = saveDataToStorage;
+        window.loadSavedData = loadSavedData;
+        window.clearSavedData = clearSavedData;
         
         // Log de inicialización
-        console.log('Widget de Google Maps cargado y listo - Hosting Externo');
+        console.log('Widget de Google Maps cargado y listo - Hosting Externo con Persistencia');
     </script>
 </body>
 </html>
