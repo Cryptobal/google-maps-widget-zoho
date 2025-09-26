@@ -52,6 +52,19 @@
             font-weight: 500;
         }
         
+        .version-indicator {
+            font-size: 14px;
+            color: #ffffff;
+            background-color: #28a745;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-top: 8px;
+            font-weight: 600;
+            text-align: center;
+            border: 2px solid #1e7e34;
+            box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+        }
+        
         .widget-content {
             padding: 12px;
         }
@@ -112,6 +125,31 @@
         
         .btn-secondary:hover {
             background-color: #545b62;
+        }
+        
+        .btn-save {
+            background-color: #28a745 !important;
+            color: #ffffff !important;
+            font-weight: 600 !important;
+            border: 2px solid #1e7e34 !important;
+            box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3) !important;
+        }
+        
+        .btn-save:hover {
+            background-color: #1e7e34 !important;
+            transform: translateY(-1px);
+        }
+        
+        .save-indicator {
+            font-size: 12px;
+            color: #28a745;
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 6px 10px;
+            border-radius: 4px;
+            margin-top: 8px;
+            text-align: center;
+            font-weight: 600;
         }
         
         .map-container {
@@ -240,6 +278,7 @@
             <div class="widget-title">🗺️ Buscador de Direcciones</div>
             <div class="widget-subtitle">Busca direcciones y visualiza en el mapa</div>
             <div id="statusIndicator" class="status-indicator">🟢 Conectado</div>
+            <div class="version-indicator">✅ ACTUALIZADO v2.1 - BOTÓN GUARDAR DISPONIBLE</div>
         </div>
         
         <div class="widget-content">
@@ -260,9 +299,12 @@
             <!-- Botones -->
             <div class="button-group">
                 <button id="searchBtn" class="btn btn-primary">🔍 Buscar</button>
-                <button id="saveBtn" class="btn btn-primary" style="background-color: #28a745;">💾 Guardar en Zoho</button>
+                <button id="saveBtn" class="btn btn-save">💾 GUARDAR EN ZOHO</button>
                 <button id="clearBtn" class="btn btn-secondary">🗑️ Limpiar</button>
             </div>
+            
+            <!-- Indicador de botón guardar -->
+            <div class="save-indicator">✅ BOTÓN GUARDAR ACTIVO - v2.1</div>
             
             <!-- Contenedor del mapa -->
             <div id="mapContainer" class="map-container">
