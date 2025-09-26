@@ -252,6 +252,7 @@
             <!-- Botones -->
             <div class="button-group">
                 <button id="searchBtn" class="btn btn-primary">🔍 Buscar</button>
+                <button id="saveBtn" class="btn btn-primary" style="background-color: #28a745;">💾 Guardar en Zoho</button>
                 <button id="clearBtn" class="btn btn-secondary">🗑️ Limpiar</button>
             </div>
             
@@ -317,10 +318,14 @@
         function setupEventListeners() {
             const addressInput = document.getElementById('addressInput');
             const searchBtn = document.getElementById('searchBtn');
+            const saveBtn = document.getElementById('saveBtn');
             const clearBtn = document.getElementById('clearBtn');
             
             // Evento de búsqueda
             searchBtn.addEventListener('click', handleSearch);
+            
+            // Evento de guardar
+            saveBtn.addEventListener('click', handleSave);
             
             // Evento de limpiar
             clearBtn.addEventListener('click', clearAll);
@@ -419,6 +424,38 @@
                     showMessage('No se pudo encontrar la dirección especificada. Intenta con una dirección más específica.', 'error');
                 }
             });
+        }
+        
+        function handleSave() {
+            const address = document.getElementById('addressInput').value.trim();
+            
+            if (!address) {
+                showMessage('Por favor, busca una dirección primero', 'error');
+                return;
+            }
+            
+            // Obtener datos del formulario
+            const formData = getFormData();
+            
+            if (!formData.fullAddress) {
+                showMessage('No hay datos de dirección para guardar', 'error');
+                return;
+            }
+            
+            // Mostrar estado de carga
+            const saveBtn = document.getElementById('saveBtn');
+            const originalText = saveBtn.innerHTML;
+            saveBtn.innerHTML = '<span class="loading"></span>Guardando...';
+            saveBtn.disabled = true;
+            
+            // Intentar guardar en Zoho CRM
+            saveToZohoCRM(formData);
+            
+            // Restaurar botón después de un tiempo
+            setTimeout(function() {
+                saveBtn.innerHTML = originalText;
+                saveBtn.disabled = false;
+            }, 2000);
         }
         
         function showLocation(place) {
@@ -680,16 +717,150 @@
         
         function saveToZohoCRM(data) {
             try {
-                // Intentar guardar en Zoho CRM usando la API
+                console.log('Intentando guardar en Zoho CRM:', data);
+                
+                // Método 1: Usar ZOHO.CRM.API si está disponible
                 if (typeof ZOHO !== 'undefined' && ZOHO.CRM && ZOHO.CRM.API) {
-                    // Esta función se ejecutará cuando Zoho CRM esté disponible
-                    console.log('Intentando guardar en Zoho CRM:', data);
-                    
-                    // Aquí puedes agregar la lógica específica para guardar en Zoho CRM
-                    // Por ejemplo, actualizar campos de un registro específico
+                    saveUsingZohoAPI(data);
                 }
+                // Método 2: Usar ZOHO.CRM.UI si está disponible
+                else if (typeof ZOHO !== 'undefined' && ZOHO.CRM && ZOHO.CRM.UI) {
+                    saveUsingZohoUI(data);
+                }
+                // Método 3: Usar formulario de Zoho CRM
+                else {
+                    saveUsingZohoForm(data);
+                }
+                
             } catch (error) {
                 console.error('Error guardando en Zoho CRM:', error);
+                showMessage('Error guardando en Zoho CRM: ' + error.message, 'error');
+            }
+        }
+        
+        function saveUsingZohoAPI(data) {
+            try {
+                // Obtener el ID del registro actual
+                const recordId = getCurrentRecordId();
+                if (!recordId) {
+                    console.log('No se encontró ID de registro actual');
+                    return;
+                }
+                
+                // Preparar datos para la API
+                const recordData = {
+                    'Direccion_Completa': data.address,
+                    'Ciudad': data.city,
+                    'Comuna': data.commune,
+                    'Latitud': data.latitude,
+                    'Longitud': data.longitude
+                };
+                
+                // Actualizar registro usando la API
+                ZOHO.CRM.API.updateRecord({
+                    Entity: getCurrentEntity(),
+                    RecordID: recordId,
+                    APIData: recordData
+                }).then(function(response) {
+                    console.log('Datos guardados en Zoho CRM:', response);
+                    showMessage('Datos guardados exitosamente en Zoho CRM', 'success');
+                }).catch(function(error) {
+                    console.error('Error actualizando registro:', error);
+                    showMessage('Error guardando en Zoho CRM: ' + error.message, 'error');
+                });
+                
+            } catch (error) {
+                console.error('Error en saveUsingZohoAPI:', error);
+            }
+        }
+        
+        function saveUsingZohoUI(data) {
+            try {
+                // Usar ZOHO.CRM.UI para actualizar campos
+                if (typeof ZOHO.CRM.UI !== 'undefined') {
+                    // Obtener el formulario actual
+                    const form = ZOHO.CRM.UI.getForm();
+                    if (form) {
+                        // Actualizar campos del formulario
+                        form.setFieldValue('Direccion_Completa', data.address);
+                        form.setFieldValue('Ciudad', data.city);
+                        form.setFieldValue('Comuna', data.commune);
+                        form.setFieldValue('Latitud', data.latitude);
+                        form.setFieldValue('Longitud', data.longitude);
+                        
+                        console.log('Campos actualizados en el formulario de Zoho CRM');
+                        showMessage('Datos guardados en el formulario de Zoho CRM', 'success');
+                    }
+                }
+            } catch (error) {
+                console.error('Error en saveUsingZohoUI:', error);
+            }
+        }
+        
+        function saveUsingZohoForm(data) {
+            try {
+                // Método alternativo: usar campos ocultos del formulario
+                const hiddenFields = {
+                    'full_address': data.address,
+                    'city': data.city,
+                    'commune': data.commune,
+                    'latitude': data.latitude,
+                    'longitude': data.longitude
+                };
+                
+                // Actualizar campos ocultos
+                Object.keys(hiddenFields).forEach(function(fieldName) {
+                    const field = document.querySelector(`input[name="${fieldName}"]`);
+                    if (field) {
+                        field.value = hiddenFields[fieldName];
+                    }
+                });
+                
+                console.log('Datos guardados en campos ocultos del formulario');
+                showMessage('Datos guardados en campos ocultos. Guarda el registro para persistir los datos.', 'success');
+                
+            } catch (error) {
+                console.error('Error en saveUsingZohoForm:', error);
+            }
+        }
+        
+        function getCurrentRecordId() {
+            try {
+                // Intentar obtener el ID del registro actual desde la URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const recordId = urlParams.get('id');
+                if (recordId) return recordId;
+                
+                // Intentar obtener desde el contexto de Zoho
+                if (typeof ZOHO !== 'undefined' && ZOHO.CRM && ZOHO.CRM.API) {
+                    return ZOHO.CRM.API.getCurrentRecordId();
+                }
+                
+                return null;
+            } catch (error) {
+                console.error('Error obteniendo ID de registro:', error);
+                return null;
+            }
+        }
+        
+        function getCurrentEntity() {
+            try {
+                // Intentar obtener la entidad actual desde la URL
+                const path = window.location.pathname;
+                if (path.includes('/Leads/')) return 'Leads';
+                if (path.includes('/Contacts/')) return 'Contacts';
+                if (path.includes('/Accounts/')) return 'Accounts';
+                if (path.includes('/Deals/')) return 'Deals';
+                
+                // Intentar obtener desde el contexto de Zoho
+                if (typeof ZOHO !== 'undefined' && ZOHO.CRM && ZOHO.CRM.API) {
+                    return ZOHO.CRM.API.getCurrentEntity();
+                }
+                
+                return 'Leads'; // Default
+            } catch (error) {
+                console.error('Error obteniendo entidad actual:', error);
+                return 'Leads';
             }
         }
         
