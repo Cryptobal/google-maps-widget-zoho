@@ -278,7 +278,7 @@
             <div class="widget-title">🗺️ Buscador de Direcciones</div>
             <div class="widget-subtitle">Busca direcciones y visualiza en el mapa</div>
             <div id="statusIndicator" class="status-indicator">🟢 Conectado</div>
-            <div class="version-indicator">✅ ACTUALIZADO v2.1 - BOTÓN GUARDAR DISPONIBLE</div>
+            <div class="version-indicator">✅ ACTUALIZADO v2.3 - GUARDA EN DETALLES INSTALACIÓN</div>
         </div>
         
         <div class="widget-content">
@@ -299,12 +299,12 @@
             <!-- Botones -->
             <div class="button-group">
                 <button id="searchBtn" class="btn btn-primary">🔍 Buscar</button>
-                <button id="saveBtn" class="btn btn-save">💾 GUARDAR EN ZOHO</button>
+                <button id="saveBtn" class="btn btn-save">💾 GUARDAR EN DETALLES</button>
                 <button id="clearBtn" class="btn btn-secondary">🗑️ Limpiar</button>
             </div>
             
             <!-- Indicador de botón guardar -->
-            <div class="save-indicator">✅ BOTÓN GUARDAR ACTIVO - v2.1</div>
+            <div class="save-indicator">✅ GUARDA EN DETALLES INSTALACIÓN - v2.3</div>
             
             <!-- Contenedor del mapa -->
             <div id="mapContainer" class="map-container">
@@ -802,14 +802,16 @@
                     return;
                 }
                 
-                // Preparar datos para la API
+                // Preparar datos para la API - Campos específicos de Detalles Instalación
                 const recordData = {
-                    'Direccion_Completa': data.address,
-                    'Ciudad': data.city,
-                    'Comuna': data.commune,
-                    'Latitud': data.latitude,
-                    'Longitud': data.longitude
+                    'Direccion': data.address,           // Campo Dirección
+                    'Ciudad': data.city,                 // Campo Ciudad
+                    'Comuna': data.commune,              // Campo Comuna
+                    'Latitud': data.latitude,            // Campo Latitud
+                    'Longitud': data.longitude            // Campo Longitud
                 };
+                
+                console.log('Guardando en campos de Detalles Instalación:', recordData);
                 
                 // Actualizar registro usando la API
                 ZOHO.CRM.API.updateRecord({
@@ -817,11 +819,11 @@
                     RecordID: recordId,
                     APIData: recordData
                 }).then(function(response) {
-                    console.log('Datos guardados en Zoho CRM:', response);
-                    showMessage('Datos guardados exitosamente en Zoho CRM', 'success');
+                    console.log('Datos guardados en campos de Detalles Instalación:', response);
+                    showMessage('Datos guardados en Detalles Instalación exitosamente', 'success');
                 }).catch(function(error) {
                     console.error('Error actualizando registro:', error);
-                    showMessage('Error guardando en Zoho CRM: ' + error.message, 'error');
+                    showMessage('Error guardando en Detalles Instalación: ' + error.message, 'error');
                 });
                 
             } catch (error) {
@@ -836,15 +838,15 @@
                     // Obtener el formulario actual
                     const form = ZOHO.CRM.UI.getForm();
                     if (form) {
-                        // Actualizar campos del formulario
-                        form.setFieldValue('Direccion_Completa', data.address);
-                        form.setFieldValue('Ciudad', data.city);
-                        form.setFieldValue('Comuna', data.commune);
-                        form.setFieldValue('Latitud', data.latitude);
-                        form.setFieldValue('Longitud', data.longitude);
+                        // Actualizar campos del formulario - Campos específicos de Detalles Instalación
+                        form.setFieldValue('Direccion', data.address);        // Campo Dirección
+                        form.setFieldValue('Ciudad', data.city);              // Campo Ciudad
+                        form.setFieldValue('Comuna', data.commune);           // Campo Comuna
+                        form.setFieldValue('Latitud', data.latitude);         // Campo Latitud
+                        form.setFieldValue('Longitud', data.longitude);       // Campo Longitud
                         
-                        console.log('Campos actualizados en el formulario de Zoho CRM');
-                        showMessage('Datos guardados en el formulario de Zoho CRM', 'success');
+                        console.log('Campos de Detalles Instalación actualizados en el formulario');
+                        showMessage('Datos guardados en Detalles Instalación', 'success');
                     }
                 }
             } catch (error) {
@@ -854,25 +856,29 @@
         
         function saveUsingZohoForm(data) {
             try {
-                // Método alternativo: usar campos ocultos del formulario
-                const hiddenFields = {
-                    'full_address': data.address,
-                    'city': data.city,
-                    'commune': data.commune,
-                    'latitude': data.latitude,
-                    'longitude': data.longitude
+                // Método alternativo: usar campos del formulario de Zoho CRM
+                const zohoFields = {
+                    'Direccion': data.address,        // Campo Dirección
+                    'Ciudad': data.city,              // Campo Ciudad
+                    'Comuna': data.commune,           // Campo Comuna
+                    'Latitud': data.latitude,         // Campo Latitud
+                    'Longitud': data.longitude        // Campo Longitud
                 };
                 
-                // Actualizar campos ocultos
-                Object.keys(hiddenFields).forEach(function(fieldName) {
-                    const field = document.querySelector(`input[name="${fieldName}"]`);
+                // Buscar y actualizar campos del formulario de Zoho CRM
+                Object.keys(zohoFields).forEach(function(fieldName) {
+                    // Buscar campo por nombre
+                    const field = document.querySelector(`input[name="${fieldName}"], input[id*="${fieldName}"], input[data-field="${fieldName}"]`);
                     if (field) {
-                        field.value = hiddenFields[fieldName];
+                        field.value = zohoFields[fieldName];
+                        console.log(`Campo ${fieldName} actualizado:`, zohoFields[fieldName]);
+                    } else {
+                        console.log(`Campo ${fieldName} no encontrado en el formulario`);
                     }
                 });
                 
-                console.log('Datos guardados en campos ocultos del formulario');
-                showMessage('Datos guardados en campos ocultos. Guarda el registro para persistir los datos.', 'success');
+                console.log('Datos guardados en campos de Detalles Instalación');
+                showMessage('Datos guardados en Detalles Instalación. Guarda el registro para persistir los datos.', 'success');
                 
             } catch (error) {
                 console.error('Error en saveUsingZohoForm:', error);
