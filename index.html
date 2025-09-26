@@ -510,6 +510,12 @@
             setTimeout(function() {
                 saveBtn.innerHTML = originalText;
                 saveBtn.disabled = false;
+                
+                // Actualizar la página después de guardar
+                showMessage('Datos guardados. Actualizando página...', 'success');
+                setTimeout(function() {
+                    window.location.reload();
+                }, 1500);
             }, 2000);
         }
         
@@ -734,6 +740,16 @@
             if (!data.latitude || !data.longitude) return;
             
             try {
+                // Verificar que Google Maps esté disponible
+                if (typeof google === 'undefined' || !google.maps) {
+                    console.log('Google Maps no está disponible aún, esperando...');
+                    // Reintentar después de un tiempo
+                    setTimeout(function() {
+                        showLocationFromData(data);
+                    }, 1000);
+                    return;
+                }
+                
                 const location = { lat: data.latitude, lng: data.longitude };
                 
                 // Crear o actualizar el mapa
@@ -865,23 +881,50 @@
                     'Longitud': data.longitude        // Campo Longitud
                 };
                 
+                let fieldsUpdated = 0;
+                
                 // Buscar y actualizar campos del formulario de Zoho CRM
                 Object.keys(zohoFields).forEach(function(fieldName) {
-                    // Buscar campo por nombre
-                    const field = document.querySelector(`input[name="${fieldName}"], input[id*="${fieldName}"], input[data-field="${fieldName}"]`);
+                    // Buscar campo por múltiples selectores
+                    const selectors = [
+                        `input[name="${fieldName}"]`,
+                        `input[id*="${fieldName}"]`,
+                        `input[data-field="${fieldName}"]`,
+                        `input[placeholder*="${fieldName}"]`,
+                        `input[aria-label*="${fieldName}"]`,
+                        `textarea[name="${fieldName}"]`,
+                        `textarea[id*="${fieldName}"]`
+                    ];
+                    
+                    let field = null;
+                    for (let selector of selectors) {
+                        field = document.querySelector(selector);
+                        if (field) break;
+                    }
+                    
                     if (field) {
                         field.value = zohoFields[fieldName];
+                        // Disparar evento de cambio para que Zoho CRM detecte el cambio
+                        field.dispatchEvent(new Event('input', { bubbles: true }));
+                        field.dispatchEvent(new Event('change', { bubbles: true }));
                         console.log(`Campo ${fieldName} actualizado:`, zohoFields[fieldName]);
+                        fieldsUpdated++;
                     } else {
                         console.log(`Campo ${fieldName} no encontrado en el formulario`);
                     }
                 });
                 
-                console.log('Datos guardados en campos de Detalles Instalación');
-                showMessage('Datos guardados en Detalles Instalación. Guarda el registro para persistir los datos.', 'success');
+                if (fieldsUpdated > 0) {
+                    console.log(`Se actualizaron ${fieldsUpdated} campos de Detalles Instalación`);
+                    showMessage(`Datos guardados en ${fieldsUpdated} campos de Detalles Instalación`, 'success');
+                } else {
+                    console.log('No se encontraron campos para actualizar');
+                    showMessage('No se encontraron campos de Detalles Instalación para actualizar', 'error');
+                }
                 
             } catch (error) {
                 console.error('Error en saveUsingZohoForm:', error);
+                showMessage('Error guardando en campos de Detalles Instalación: ' + error.message, 'error');
             }
         }
         
